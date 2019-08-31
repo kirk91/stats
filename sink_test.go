@@ -51,7 +51,7 @@ func TestSourceCachedGauges(t *testing.T) {
 }
 
 func TestSourceCachedHistograms(t *testing.T) {
-	histograms := []*Histogram{newHistogram(nil, "", "", nil)}
+	histograms := []*Histogram{NewHistogram(nil, "", "", nil)}
 	src := &source{
 		rawHistograms: func() []*Histogram {
 			return histograms
@@ -61,7 +61,7 @@ func TestSourceCachedHistograms(t *testing.T) {
 	cachedHistograms := src.CachedHistograms()
 	assert.Equal(t, len(cachedHistograms), 1)
 
-	histograms = append(histograms, newHistogram(nil, "", "", nil))
+	histograms = append(histograms, NewHistogram(nil, "", "", nil))
 	cachedHistograms = src.CachedHistograms()
 	assert.Equal(t, len(cachedHistograms), 1)
 

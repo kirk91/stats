@@ -59,7 +59,7 @@ type Histogram struct {
 	cumHist *hist.Histogram // cumulative hist
 }
 
-func newHistogram(store *Store, name, tagExtractedName string, tags []*Tag) *Histogram {
+func NewHistogram(store *Store, name, tagExtractedName string, tags []*Tag) *Histogram {
 	h := &Histogram{
 		store:        store,
 		metric:       newMetric(name, tagExtractedName, tags),

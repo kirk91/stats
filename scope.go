@@ -190,7 +190,7 @@ func (scope *Scope) histogramLocked(name string) *Histogram {
 	}
 	finalName := scope.prefix + name
 	extractedName, tags := scope.store.getTagsForName(finalName)
-	h := newHistogram(scope.store, finalName, extractedName, tags)
+	h := NewHistogram(scope.store, finalName, extractedName, tags)
 	tmp[name] = h
 	scope.updateHistograms(tmp)
 	return h
