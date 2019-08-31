@@ -9,4 +9,4 @@ stats is a general pkg for metrics.
 
 ## Usage
 
-See [](example/store_test.go)
+See [example](./example/store_test.go)
