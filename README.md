@@ -1,6 +1,6 @@
 # stats
 
-stats is a general pkg for metrics.
+stats is a general module for metrics.
 
 ## Features
 
