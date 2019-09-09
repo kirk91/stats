@@ -1,50 +1,48 @@
 package stats
 
-// func TestHistogramStatistic(t *testing.T) {
-// hist := buckethist.New()
-// for i := 2; i < 100; i++ {
-// hist.RecordValue(uint64(i))
-// }
-// hstats := newHistogramStatistics(hist)
-// assert.Equal(t, defaultSupportedQuantiles, hstats.SupportedQuantiles())
-// assert.Equal(t, len(defaultSupportedQuantiles), len(hstats.ComputedQuantiles()))
-// assert.Equal(t, hist.ApproxMax(), hstats.Max())
-// assert.Equal(t, hist.ApproxMin(), hstats.Min())
-// assert.Equal(t, hist.ApproxSum(), hstats.Sum())
-// assert.Equal(t, hist.Count(), hstats.Count())
+import (
+	"testing"
 
-// buckets := hist.Buckets()
-// bucketVals := make([]uint64, len(buckets))
-// for i := 0; i < len(buckets); i++ {
-// bucketVals[i] = buckets[i].Count()
-// }
-// assert.Equal(t, bucketVals, hstats.BucketVals())
-// }
+	hist "github.com/samaritan-proxy/circonusllhist"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestHistogram(t *testing.T) {
-// h := NewHistogram(nil, "foo.bar", "foo", nil)
-// assert.Contains(t, h.Summary(), "No recorded values")
+func TestHistogramStatistic(t *testing.T) {
+	hist := hist.New()
+	for i := 2; i < 100; i++ {
+		hist.RecordIntScale(int64(i), 0)
+	}
+	hstats := newHistogramStatistics(hist)
+	assert.Equal(t, defaultSupportedQuantiles, hstats.SupportedQuantiles())
+	assert.Equal(t, len(defaultSupportedQuantiles), len(hstats.ComputedQuantiles()))
+}
 
-// istats := h.IntervalStatistics()
-// assert.Equal(t, uint64(0), istats.Count())
+func TestHistogram(t *testing.T) {
+	h := NewHistogram(nil, "foo.bar", "foo", nil)
+	assert.Contains(t, h.Summary(), "No recorded values")
 
-// h.Record(3)
-// istats = h.IntervalStatistics()
-// assert.Equal(t, uint64(1), istats.Count())
+	itlStat := h.IntervalStatistics()
+	assert.Equal(t, uint64(0), itlStat.SampleCount())
 
-// // refresh
-// h.refreshIntervalStatistic()
-// istats = h.IntervalStatistics()
-// assert.Equal(t, uint64(1), istats.Count())
+	h.Record(3)
+	itlStat = h.IntervalStatistics()
+	assert.Equal(t, uint64(0), itlStat.SampleCount())
 
-// // refresh twice
-// h.refreshIntervalStatistic()
-// istats = h.IntervalStatistics()
-// assert.Equal(t, uint64(0), istats.Count())
+	// refresh
+	h.refreshIntervalStatistic()
+	itlStat = h.IntervalStatistics()
+	assert.Equal(t, uint64(1), itlStat.SampleCount())
 
-// assert.Contains(t, h.Summary(), "P0")
-// assert.Contains(t, h.Summary(), "P25")
-// assert.Contains(t, h.Summary(), "P50")
-// assert.Contains(t, h.Summary(), "P95")
-// assert.Contains(t, h.Summary(), "P100")
-// }
+	// refresh twice
+	h.refreshIntervalStatistic()
+	itlStat = h.IntervalStatistics()
+	assert.Equal(t, uint64(0), itlStat.SampleCount())
+
+	assert.Contains(t, h.Summary(), "P0")
+	assert.Contains(t, h.Summary(), "P25")
+	assert.Contains(t, h.Summary(), "P50")
+	assert.Contains(t, h.Summary(), "P90")
+	assert.Contains(t, h.Summary(), "P95")
+	assert.Contains(t, h.Summary(), "P99")
+	assert.Contains(t, h.Summary(), "P100")
+}

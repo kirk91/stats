@@ -1,7 +1,9 @@
 package stats
 
 import (
+	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -51,33 +53,33 @@ type Histogram struct {
 	metric
 	store *Store
 
-	sampleCount  uint64
-	rawHistCount uint64
-	rawHists     []*hist.Histogram
+	sampleCount uint64
+	rawCount    uint64
+	raws        []*hist.Histogram
 
-	itlHist *hist.Histogram // interval hist
-	cumHist *hist.Histogram // cumulative hist
+	itl *hist.Histogram // interval hist
+	cum *hist.Histogram // cumulative hist
 }
 
 func NewHistogram(store *Store, name, tagExtractedName string, tags []*Tag) *Histogram {
 	h := &Histogram{
-		store:        store,
-		metric:       newMetric(name, tagExtractedName, tags),
-		itlHist:      hist.NewNoLocks(),
-		cumHist:      hist.New(),
-		rawHistCount: uint64(runtime.GOMAXPROCS(0)),
+		store:    store,
+		metric:   newMetric(name, tagExtractedName, tags),
+		itl:      hist.NewNoLocks(),
+		cum:      hist.New(),
+		rawCount: uint64(runtime.GOMAXPROCS(0)),
 	}
-	h.rawHists = make([]*hist.Histogram, h.rawHistCount)
-	for i := uint64(0); i < h.rawHistCount; i++ {
-		h.rawHists[i] = hist.New()
+	h.raws = make([]*hist.Histogram, h.rawCount)
+	for i := uint64(0); i < h.rawCount; i++ {
+		h.raws[i] = hist.New()
 	}
 	return h
 }
 
 // Record records a value to the Histogram.
 func (h *Histogram) Record(val uint64) {
-	rawHist := h.rawHists[atomic.AddUint64(&h.sampleCount, 1)%h.rawHistCount]
-	rawHist.RecordIntScale(int64(val), 0)
+	raw := h.raws[atomic.AddUint64(&h.sampleCount, 1)%h.rawCount]
+	raw.RecordIntScale(int64(val), 0)
 	if h.store != nil {
 		h.store.deliverHistogramSampleToSinks(h, val)
 	}
@@ -85,16 +87,39 @@ func (h *Histogram) Record(val uint64) {
 }
 
 func (h *Histogram) refreshIntervalStatistic() {
-	// merge all raw hists
+	// merge and reset all raw hists
 	merged := hist.NewNoLocks()
-	for _, rawHist := range h.rawHists {
-		merged.Merge(rawHist)
+	for _, raw := range h.raws {
+		merged.Merge(raw)
+		// NOTE: Merge and reset is not atomic, maybe some
+		// samples would be dropped.
+		raw.FullReset()
 	}
-	h.itlHist = merged.Copy()
-	h.cumHist.Merge(merged)
+	h.itl = merged.Copy()
+	h.cum.Merge(merged)
 }
 
 // IntervalStatistics returns the interval statistics of Histogram.
 func (h *Histogram) IntervalStatistics() *HistogramStatistics {
-	return newHistogramStatistics(h.itlHist)
+	return newHistogramStatistics(h.itl)
+}
+
+// Summary returns the summary of the histogram.
+func (h *Histogram) Summary() string {
+	if h.cum.SampleCount() == 0 {
+		return "No recorded values"
+	}
+
+	itlStat := newHistogramStatistics(h.itl)
+	cumStat := newHistogramStatistics(h.cum)
+	var summary []string
+	for i, q := range cumStat.SupportedQuantiles() {
+		summary = append(summary,
+			fmt.Sprintf("P%d(%d,%d)", int(100*q),
+				int64(itlStat.ComputedQuantiles()[i]),
+				int64(cumStat.ComputedQuantiles()[i]),
+			),
+		)
+	}
+	return strings.Join(summary, " ")
 }
