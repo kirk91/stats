@@ -13,5 +13,5 @@ See [example](./example/store_test.go)
 
 ## Inspired by
 
-- [gostats] (https://github.com/lyft/gostats)
+- [gostats](https://github.com/lyft/gostats)
 - [envoy stats](https://github.com/envoyproxy/envoy/tree/master/source/common/stats)
