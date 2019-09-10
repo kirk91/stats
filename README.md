@@ -10,3 +10,8 @@ stats is a general module for metrics.
 ## Usage
 
 See [example](./example/store_test.go)
+
+## Inspired by
+
+- [gostats] (https://github.com/lyft/gostats)
+- [envoy stats](https://github.com/envoyproxy/envoy/tree/master/source/common/stats)
