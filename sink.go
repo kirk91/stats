@@ -74,7 +74,8 @@ func (src *source) ClearCache() {
 type Sink interface {
 	// Flush flushes periodic stats to the backing store.
 	Flush(Source) error
-	// WriteHistogram writes a single histogram sample to the
-	// backing store directly.
+	// WriteHistogram writes a single histogram sample to the backing store directly.
+	// It is only used to be compatible with the TSDB which doesn't support
+	// pre-aggreated histogram data.
 	WriteHistogramSample(h *Histogram, val uint64) error
 }

@@ -41,7 +41,7 @@ func ExampleStore() {
 
 	// add statsd sink
 	statsdAddr := "127.0.0.1:8125"
-	statsdSink := statsd.NewSink(statsdAddr, appid)
+	statsdSink := statsd.New(statsdAddr, appid)
 	store.AddSink(statsdSink)
 
 	// start the background routine which flushes the metrics periodically.

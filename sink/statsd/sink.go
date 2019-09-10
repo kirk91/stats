@@ -9,20 +9,20 @@ import (
 	"github.com/kirk91/stats"
 )
 
-var _ stats.Sink = new(Sink)
+var _ stats.Sink = new(sink)
 
-type Sink struct {
+type sink struct {
 	address string
 	prefix  string
 	_client *statsd.Client
 }
 
-// NewSink returns a new Sink for statsd.
-func NewSink(address string, prefix string) *Sink {
-	return &Sink{address: address, prefix: prefix}
+// New returns a new sink for statsd.
+func New(address string, prefix string) *sink {
+	return &sink{address: address, prefix: prefix}
 }
 
-func (s *Sink) getClient() (*statsd.Client, error) {
+func (s *sink) getClient() (*statsd.Client, error) {
 	var err error
 	if s._client == nil {
 		s._client, err = statsd.New("udp", s.address, statsd.Prefix(s.prefix))
@@ -34,7 +34,7 @@ func (s *Sink) getClient() (*statsd.Client, error) {
 }
 
 // Flush sends cached metrics from source to sink.
-func (s *Sink) Flush(source stats.Source) error {
+func (s *sink) Flush(source stats.Source) error {
 	cli, err := s.getClient()
 	if err != nil {
 		return errors.Wrap(err, "error getting client")
@@ -44,20 +44,20 @@ func (s *Sink) Flush(source stats.Source) error {
 	return nil
 }
 
-func (s *Sink) flushCounters(cli *statsd.Client, cs []*stats.Counter) {
+func (s *sink) flushCounters(cli *statsd.Client, cs []*stats.Counter) {
 	for _, c := range cs {
 		val := c.IntervalValue()
 		cli.CountUint64fWithHost(val, c.Name())
 	}
 }
 
-func (s *Sink) flushGauges(cli *statsd.Client, gs []*stats.Gauge) {
+func (s *sink) flushGauges(cli *statsd.Client, gs []*stats.Gauge) {
 	for _, g := range gs {
 		cli.GaugeUint64fWithHost(g.Value(), g.Name())
 	}
 }
 
-func (s *Sink) WriteHistogramSample(h *stats.Histogram, val uint64) error {
+func (s *sink) WriteHistogramSample(h *stats.Histogram, val uint64) error {
 	cli, err := s.getClient()
 	if err != nil {
 		return errors.Wrap(err, "error getting client")

@@ -71,8 +71,8 @@ func TestFlushCounters(t *testing.T) {
 	ss := newStatsdServer(t)
 	defer ss.Close()
 
-	prefix := "arch.samaritan"
-	s := NewSink(ss.Addr(), prefix)
+	prefix := "samaritan"
+	s := New(ss.Addr(), prefix)
 
 	c := stats.NewCounter("foo", "", nil)
 	c.Inc()
@@ -90,8 +90,8 @@ func TestFlushGauges(t *testing.T) {
 	ss := newStatsdServer(t)
 	defer ss.Close()
 
-	prefix := "arch.samaritan"
-	s := NewSink(ss.Addr(), prefix)
+	prefix := "samaritan"
+	s := New(ss.Addr(), prefix)
 
 	g := stats.NewGauge("bar", "", nil)
 	g.Inc()
@@ -110,8 +110,8 @@ func TestWriteHistogramSample(t *testing.T) {
 	ss := newStatsdServer(t)
 	defer ss.Close()
 
-	prefix := "arch.samaritan"
-	s := NewSink(ss.Addr(), prefix)
+	prefix := "samaritan"
+	s := New(ss.Addr(), prefix)
 
 	h := stats.NewHistogram(nil, "haha", "", nil)
 	s.WriteHistogramSample(h, uint64(10))
