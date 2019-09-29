@@ -197,7 +197,7 @@ func TestStorePeroidcFlush(t *testing.T) {
 	sink2 := new(mockSink)
 	store := NewStore(
 		NewStoreOption().
-			WithFlushInterval(time.Millisecond * 50).
+			WithFlushInterval(time.Millisecond * 100).
 			WithSinks(sink1))
 	store.AddSink(sink2)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -210,7 +210,7 @@ func TestStorePeroidcFlush(t *testing.T) {
 		assert.Equal(t, len(src.CachedCounters()), 1)
 		assert.Equal(t, len(src.CachedGauges()), 0)
 	}
-	time.Sleep(time.Millisecond * 60) // wait until trigger the first flush
+	time.Sleep(time.Millisecond * 150) // wait until trigger the first flush
 	assert.True(t, sink1.flushCalled)
 	assert.True(t, sink2.flushCalled)
 
@@ -220,7 +220,7 @@ func TestStorePeroidcFlush(t *testing.T) {
 		assert.Equal(t, len(src.CachedCounters()), 1)
 		assert.Equal(t, len(src.CachedGauges()), 1)
 	}
-	time.Sleep(time.Millisecond * 60) // wait until trigger the second flush
+	time.Sleep(time.Millisecond * 150) // wait until trigger the second flush
 }
 
 func TestStoreDefaultTags(t *testing.T) {
