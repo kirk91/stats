@@ -17,8 +17,6 @@ type Store struct {
 
 	scopes map[string]*Scope
 	errors chan error
-
-	done chan struct{}
 }
 
 // NewStore returns a stats storage.

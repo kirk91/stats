@@ -4,48 +4,92 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 
 	hist "github.com/samaritan-proxy/circonusllhist"
 )
 
+// the default value is enough is most scenarios.
 var (
-	defaultSupportedQuantiles = []float64{0.0, 0.25, 0.5, 0.9, 0.95, 0.99, 1.0}
+	defaultSupportedQuantiles = []float64{
+		0.0, 0.25, 0.5, 0.9, 0.95, 0.99, 1.0,
+	}
+	defaultSupportedBuckets = []float64{
+		0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000,
+		2500, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 3600000,
+	}
 )
 
 // HistogramStatistics holds the computed statistic of a histogram.
 type HistogramStatistics struct {
 	*hist.Histogram
-	mu sync.RWMutex
 
-	// supported quantiles
-	qs []float64
-	// computed quantile values
-	qvals []float64
+	sampleCount uint64
+	sampleSum   float64
+
+	// quantile releated
+	sqs []float64 // supported
+	cqs []float64 // computed
+
+	// bucket releated
+	sbs []float64 // supported
+	cbs []uint64  // computed
 }
 
 func newHistogramStatistics(h *hist.Histogram) *HistogramStatistics {
-	qs := defaultSupportedQuantiles
-	qvals, _ := h.ApproxQuantile(qs)
-	return &HistogramStatistics{
-		Histogram: h,
-		qs:        qs,
-		qvals:     qvals,
+	s := &HistogramStatistics{
+		Histogram:   h,
+		sampleCount: h.SampleCount(),
+		sampleSum:   h.ApproxSum(),
 	}
+
+	// quantiles
+	s.sqs = defaultSupportedQuantiles
+	s.cqs, _ = h.ApproxQuantile(s.sqs)
+
+	// buckets
+	s.sbs = defaultSupportedBuckets
+	for _, b := range s.sbs {
+		s.cbs = append(s.cbs, h.ApproxCountBelow(b))
+	}
+
+	return s
 }
 
 // SupportedQuantiles returns the supported quantiles.
-func (hs *HistogramStatistics) SupportedQuantiles() []float64 {
-	return hs.qs
+func (s *HistogramStatistics) SupportedQuantiles() []float64 {
+	return s.sqs
 }
 
 // ComputedQuantiles returns the computed quantile values during the period.
-func (hs *HistogramStatistics) ComputedQuantiles() []float64 {
-	if len(hs.qvals) == 0 {
-		return make([]float64, len(hs.qs))
+func (s *HistogramStatistics) ComputedQuantiles() []float64 {
+	if len(s.cqs) == 0 {
+		return make([]float64, len(s.sqs))
 	}
-	return hs.qvals
+	return s.cqs
+}
+
+// SupportedBuckets returns the supported buckets.
+func (s *HistogramStatistics) SupportedBuckets() []float64 {
+	return s.sbs
+}
+
+// ComputedBuckets returns the computed bucket values during the period.
+func (s *HistogramStatistics) ComputedBuckets() []uint64 {
+	if len(s.sbs) == 0 {
+		return make([]uint64, len(s.sbs))
+	}
+	return s.cbs
+}
+
+// SampleCount returns the total number of value during the period.
+func (s *HistogramStatistics) SampleCount() uint64 {
+	return s.sampleCount
+}
+
+// SampleSum returns the sum of all values during the period.
+func (s *HistogramStatistics) SampleSum() float64 {
+	return s.sampleSum
 }
 
 // A Histogram records values one at a time.
@@ -101,7 +145,12 @@ func (h *Histogram) refreshIntervalStatistic() {
 
 // IntervalStatistics returns the interval statistics of Histogram.
 func (h *Histogram) IntervalStatistics() *HistogramStatistics {
-	return newHistogramStatistics(h.itl)
+	return newHistogramStatistics(h.itl.Copy())
+}
+
+// CumulativeStatistics returns the cumulative statistics of Histogram.
+func (h *Histogram) CumulativeStatistics() *HistogramStatistics {
+	return newHistogramStatistics(h.cum.Copy())
 }
 
 // Summary returns the summary of the histogram.

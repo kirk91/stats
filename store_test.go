@@ -16,7 +16,6 @@ type mockSink struct {
 }
 
 func (sink *mockSink) Flush(src Source) error {
-	sink.flushCalled = true
 	if sink.flushCallback != nil {
 		sink.flushCallback(src)
 	}
@@ -194,33 +193,23 @@ func TestStoreDeliverHistogramSampleToSinks(t *testing.T) {
 
 func TestStorePeroidcFlush(t *testing.T) {
 	sink1 := new(mockSink)
-	sink2 := new(mockSink)
-	store := NewStore(
-		NewStoreOption().
-			WithFlushInterval(time.Millisecond * 50).
-			WithSinks(sink1))
-	store.AddSink(sink2)
-	ctx, cancel := context.WithCancel(context.Background())
-	go store.FlushingLoop(ctx)
-	defer cancel()
-
-	scope := store.CreateScope("")
-	scope.Counter("foo").Inc()
 	sink1.flushCallback = func(src Source) {
 		assert.Equal(t, len(src.CachedCounters()), 1)
 		assert.Equal(t, len(src.CachedGauges()), 0)
 	}
-	time.Sleep(time.Millisecond * 60) // wait until trigger the first flush
-	assert.True(t, sink1.flushCalled)
-	assert.True(t, sink2.flushCalled)
 
-	// add new gauge, test if the source cache has been reset.
-	scope.Gauge("foo").Inc()
-	sink1.flushCallback = func(src Source) {
-		assert.Equal(t, len(src.CachedCounters()), 1)
-		assert.Equal(t, len(src.CachedGauges()), 1)
-	}
-	time.Sleep(time.Millisecond * 60) // wait until trigger the second flush
+	opt := NewStoreOption().
+		WithFlushInterval(time.Millisecond * 100).
+		WithSinks(sink1)
+	store := NewStore(opt)
+
+	// add gauge
+	scope := store.CreateScope("")
+	scope.Counter("foo").Inc()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(time.Millisecond*150, cancel)
+	store.FlushingLoop(ctx)
 }
 
 func TestStoreDefaultTags(t *testing.T) {
