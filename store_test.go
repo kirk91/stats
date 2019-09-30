@@ -10,14 +10,14 @@ import (
 )
 
 type mockSink struct {
-	flushCallback         func(Source)
+	flushCallback         func(MetricsSnapshot)
 	flushCalled           bool
 	writeHistSampleCalled bool
 }
 
-func (sink *mockSink) Flush(src Source) error {
+func (sink *mockSink) Flush(snapshot MetricsSnapshot) error {
 	if sink.flushCallback != nil {
-		sink.flushCallback(src)
+		sink.flushCallback(snapshot)
 	}
 	return nil
 }
@@ -193,9 +193,9 @@ func TestStoreDeliverHistogramSampleToSinks(t *testing.T) {
 
 func TestStorePeroidcFlush(t *testing.T) {
 	sink1 := new(mockSink)
-	sink1.flushCallback = func(src Source) {
-		assert.Equal(t, len(src.CachedCounters()), 1)
-		assert.Equal(t, len(src.CachedGauges()), 0)
+	sink1.flushCallback = func(snapshot MetricsSnapshot) {
+		assert.Equal(t, len(snapshot.Counters()), 1)
+		assert.Equal(t, len(snapshot.Gauges()), 0)
 	}
 
 	opt := NewStoreOption().

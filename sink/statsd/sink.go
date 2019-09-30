@@ -34,13 +34,13 @@ func (s *sink) getClient() (*statsd.Client, error) {
 }
 
 // Flush sends cached metrics from source to sink.
-func (s *sink) Flush(source stats.Source) error {
+func (s *sink) Flush(snapshot stats.MetricsSnapshot) error {
 	cli, err := s.getClient()
 	if err != nil {
 		return errors.Wrap(err, "error getting client")
 	}
-	s.flushCounters(cli, source.CachedCounters())
-	s.flushGauges(cli, source.CachedGauges())
+	s.flushCounters(cli, snapshot.Counters())
+	s.flushGauges(cli, snapshot.Gauges())
 	return nil
 }
 

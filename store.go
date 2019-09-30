@@ -41,11 +41,6 @@ func (store *Store) Errors() <-chan error {
 // FlushingLoop flushes stats to remote destinations(defined by Sinks) at an interval, it blocks untils ctx canceled.
 // NOTE: this function must be called or metrics won't be sent out.
 func (store *Store) FlushingLoop(ctx context.Context) {
-	source := &source{
-		rawCounters:   store.Counters,
-		rawGauges:     store.Gauges,
-		rawHistograms: store.Histograms,
-	}
 	ticker := time.NewTicker(store.flushInterval)
 	for {
 		select {
@@ -53,12 +48,18 @@ func (store *Store) FlushingLoop(ctx context.Context) {
 			ticker.Stop()
 			return
 		case <-ticker.C:
+			// make metrics snashot
+			guages := store.Gauges()
+			counters := store.Counters()
+			histograms := store.Histograms()
+			snapshot := newMetricsSnapshot(guages, counters, histograms)
+
+			// flush metrics to the registerd sinks
 			sinks := store.Sinks()
 			for _, sink := range sinks {
-				err := sink.Flush(source)
+				err := sink.Flush(snapshot)
 				store.sendError(err)
 			}
-			source.ClearCache() // clear cached counters, gauges and histograms
 		}
 	}
 }

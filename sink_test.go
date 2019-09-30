@@ -6,66 +6,41 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSourceCachedCounters(t *testing.T) {
-	counters := []*Counter{new(Counter)}
-	src := &source{
-		rawCounters: func() []*Counter {
-			return counters
-		},
-	}
+func TestMetricsSnapshot(t *testing.T) {
+	t.Run("gauges", func(t *testing.T) {
+		gauge1 := new(Gauge)
+		gauge1.Set(1)
 
-	cachedCounters := src.CachedCounters()
-	assert.Equal(t, len(cachedCounters), 1)
+		gauges := []*Gauge{gauge1}
+		snapshot := newMetricsSnapshot(gauges, nil, nil)
+		assert.Len(t, snapshot.Gauges(), 1)
+	})
 
-	counter := new(Counter)
-	counter.Add(2)
-	counters = append(counters, counter) // update original counters
-	cachedCounters = src.CachedCounters()
-	assert.Equal(t, len(cachedCounters), 1) // cached counters not change
-	assert.Equal(t, 0, int(counter.IntervalValue()))
+	t.Run("counters", func(t *testing.T) {
+		counter1 := new(Counter)
+		counter1.Inc()
 
-	src.ClearCache() // clear cache
-	cachedCounters = src.CachedCounters()
-	assert.Equal(t, len(cachedCounters), 2)
-	assert.Equal(t, 2, int(counter.IntervalValue()))
-}
+		counters := []*Counter{counter1}
+		snapshot := newMetricsSnapshot(nil, counters, nil)
+		assert.Len(t, snapshot.Counters(), 1)
+		assert.EqualValues(t, 1, snapshot.Counters()[0].IntervalValue())
 
-func TestSourceCachedGauges(t *testing.T) {
-	gauges := []*Gauge{new(Gauge)}
-	src := &source{
-		rawGauges: func() []*Gauge {
-			return gauges
-		},
-	}
+		// interval value not change when counter update
+		counter1.Inc()
+		assert.EqualValues(t, 1, snapshot.Counters()[0].IntervalValue())
+	})
 
-	cachedGagues := src.CachedGauges()
-	assert.Equal(t, len(cachedGagues), 1)
+	t.Run("histograms", func(t *testing.T) {
+		histogram1 := NewHistogram(nil, "", "", nil)
+		histogram1.Record(1)
 
-	gauges = append(gauges, new(Gauge))
-	cachedGagues = src.CachedGauges()
-	assert.Equal(t, len(cachedGagues), 1)
+		histograms := []*Histogram{histogram1}
+		snapshot := newMetricsSnapshot(nil, nil, histograms)
+		assert.Len(t, snapshot.Histograms(), 1)
+		assert.EqualValues(t, 1, snapshot.Histograms()[0].IntervalStatistics().SampleCount())
 
-	src.ClearCache()
-	cachedGagues = src.CachedGauges()
-	assert.Equal(t, len(cachedGagues), 2)
-}
-
-func TestSourceCachedHistograms(t *testing.T) {
-	histograms := []*Histogram{NewHistogram(nil, "", "", nil)}
-	src := &source{
-		rawHistograms: func() []*Histogram {
-			return histograms
-		},
-	}
-
-	cachedHistograms := src.CachedHistograms()
-	assert.Equal(t, len(cachedHistograms), 1)
-
-	histograms = append(histograms, NewHistogram(nil, "", "", nil))
-	cachedHistograms = src.CachedHistograms()
-	assert.Equal(t, len(cachedHistograms), 1)
-
-	src.ClearCache()
-	cachedHistograms = src.CachedHistograms()
-	assert.Equal(t, len(cachedHistograms), 2)
+		// interval statistic not change when histogram update
+		histogram1.Record(1)
+		assert.EqualValues(t, 1, snapshot.Histograms()[0].IntervalStatistics().SampleCount())
+	})
 }
