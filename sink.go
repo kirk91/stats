@@ -1,79 +1,57 @@
 package stats
 
-// Source provides cached access to a particular store's stats.
-type Source interface {
-	// CachedCounters returns all known counters. Will use cached values
-	// if already accessed and ClearCache hasn't been called since.
-	CachedCounters() []*Counter
-	// CachedGauges returns all known gauges. Will use cached values if
-	// already accessed and ClearCache hasn't been called since.
-	CachedGauges() []*Gauge
-	// CachedHistograms returns all known histograms. Will use cached values
-	// if already accessed and ClearCache hasn't been called since.
-	CachedHistograms() []*Histogram
-
-	// ClearCache resets the cache so that any future calls to get cached
-	// metrics will refresh the set.
-	ClearCache()
+// MetricsSnapshot represents the metrics snapshot in a particular time.
+type MetricsSnapshot interface {
+	// Gauges returns all known guages.
+	Gauges() []*Gauge
+	// Counters returns all known counters.
+	Counters() []*Counter
+	// Histograms returns all known histograms.
+	Histograms() []*Histogram
 }
 
-type source struct {
-	rawCounters   func() []*Counter
-	rawGauges     func() []*Gauge
-	rawHistograms func() []*Histogram
+var _ MetricsSnapshot = new(metricsSnapshot)
 
-	counters   []*Counter
+type metricsSnapshot struct {
 	gauges     []*Gauge
+	counters   []*Counter
 	histograms []*Histogram
 }
 
-func (src *source) CachedCounters() []*Counter {
-	if src.counters == nil {
-		if src.rawCounters == nil {
-			return nil
-		}
-		src.counters = src.rawCounters()
-		for _, counter := range src.counters {
-			counter.Latch()
-		}
+func newMetricsSnapshot(gauges []*Gauge, counters []*Counter, histograms []*Histogram) *metricsSnapshot {
+	snap := &metricsSnapshot{
+		gauges:     gauges,
+		counters:   counters,
+		histograms: histograms,
 	}
-	return src.counters
+	// refresh counter interval value.
+	for _, counter := range snap.counters {
+		counter.Latch()
+	}
+	// refresh histogram interval stattistic.
+	for _, histogram := range snap.histograms {
+		histogram.refreshIntervalStatistic()
+	}
+	return snap
 }
 
-func (src *source) CachedGauges() []*Gauge {
-	if src.gauges == nil {
-		if src.rawGauges == nil {
-			return nil
-		}
-		src.gauges = src.rawGauges()
-	}
-	return src.gauges
+func (snap *metricsSnapshot) Gauges() []*Gauge {
+	return snap.gauges
 }
 
-func (src *source) CachedHistograms() []*Histogram {
-	if src.histograms == nil {
-		if src.rawHistograms == nil {
-			return nil
-		}
-		src.histograms = src.rawHistograms()
-		for _, histogram := range src.histograms {
-			histogram.refreshIntervalStatistic()
-		}
-	}
-	return src.histograms
+func (snap *metricsSnapshot) Counters() []*Counter {
+	return snap.counters
 }
 
-func (src *source) ClearCache() {
-	src.counters = nil
-	src.gauges = nil
-	src.histograms = nil
+func (snap *metricsSnapshot) Histograms() []*Histogram {
+	return snap.histograms
 }
 
 // Sink is a sink for stats. Each Sink is responsible for writing stats
 // to a backing store.
 type Sink interface {
-	// Flush flushes periodic stats to the backing store.
-	Flush(Source) error
+	// Flush flushes periodic metrics to the backing store.
+	Flush(MetricsSnapshot) error
 	// WriteHistogram writes a single histogram sample to the backing store directly.
 	// It is only used to be compatible with the TSDB which doesn't support
 	// pre-aggreated histogram data.
