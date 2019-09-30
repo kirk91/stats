@@ -1,4 +1,4 @@
-# stats
+# stats [![Build Status](https://travis-ci.org/kirk91/stats.svg?branch=master)](https://travis-ci.org/kirk91/stats)
 
 stats is a general module for metrics.
 
