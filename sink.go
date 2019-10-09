@@ -30,7 +30,7 @@ func newMetricsSnapshot(gauges []*Gauge, counters []*Counter, histograms []*Hist
 	}
 	// refresh histogram interval stattistic.
 	for _, histogram := range snap.histograms {
-		histogram.refreshIntervalStatistic()
+		histogram.RefreshIntervalStatistics()
 	}
 	return snap
 }

@@ -60,6 +60,8 @@ type Gauge struct {
 	val uint64
 }
 
+// NewGauge creates a gauge with given params.
+// NOTE: It should only be used in unit tests.
 func NewGauge(name, tagExtractedName string, tags []*Tag) *Gauge {
 	return &Gauge{
 		metric: newMetric(name, tagExtractedName, tags),
@@ -110,6 +112,8 @@ type Counter struct {
 	intervalVal uint64
 }
 
+// NewCounter creates a counter with given params.
+// NOTE: It should only be used in unit tests.
 func NewCounter(name, tagExtractedName string, tags []*Tag) *Counter {
 	return &Counter{metric: newMetric(name, tagExtractedName, tags)}
 }

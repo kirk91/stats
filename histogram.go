@@ -105,6 +105,8 @@ type Histogram struct {
 	cum *hist.Histogram // cumulative hist
 }
 
+// NewHistogram creates a histogram with given params.
+// NOTE: It should only be used in unit tests.
 func NewHistogram(store *Store, name, tagExtractedName string, tags []*Tag) *Histogram {
 	h := &Histogram{
 		store:    store,
@@ -130,7 +132,9 @@ func (h *Histogram) Record(val uint64) {
 	h.markUsed()
 }
 
-func (h *Histogram) refreshIntervalStatistic() {
+// RefreshIntervalStatistic refreshs the interval statistics of histogram.
+// NOTE: It should only be used in unit tests.
+func (h *Histogram) RefreshIntervalStatistics() {
 	// merge and reset all raw hists
 	merged := hist.NewNoLocks()
 	for _, raw := range h.raws {

@@ -37,14 +37,14 @@ func TestHistogram(t *testing.T) {
 	assert.Equal(t, uint64(0), cumStat.SampleCount())
 
 	// refresh
-	h.refreshIntervalStatistic()
+	h.RefreshIntervalStatistics()
 	itlStat = h.IntervalStatistics()
 	cumStat = h.CumulativeStatistics()
 	assert.Equal(t, uint64(1), itlStat.SampleCount())
 	assert.Equal(t, uint64(1), cumStat.SampleCount())
 
 	// refresh twice
-	h.refreshIntervalStatistic()
+	h.RefreshIntervalStatistics()
 	itlStat = h.IntervalStatistics()
 	cumStat = h.CumulativeStatistics()
 	assert.Equal(t, uint64(0), itlStat.SampleCount())
