@@ -8,6 +8,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/samaritan-proxy/circonusllhist v0.1.4-0.20190909095717-47c325f1002f h1:ESKmjMOTEhvqbzcPuJvdbtdMKy4CdQ2Hfd05PQ4ytjU=
 github.com/samaritan-proxy/circonusllhist v0.1.4-0.20190909095717-47c325f1002f/go.mod h1:Uzcf4GoV0aUcdf8VBt/X3meKhAfn50vnKkphijV9SNU=
+github.com/samaritan-proxy/circonusllhist v0.1.4-0.20191028071046-9512360317cd h1:zisA6tp6nWpNjTnhUUlbQgSr/r4gDIXkKiXHS0cKMwE=
+github.com/samaritan-proxy/circonusllhist v0.1.4-0.20191028071046-9512360317cd/go.mod h1:Uzcf4GoV0aUcdf8VBt/X3meKhAfn50vnKkphijV9SNU=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
