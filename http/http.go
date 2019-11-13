@@ -10,7 +10,7 @@ type statsFormat string
 
 const (
 	formatPlain      statsFormat = "plain"
-	formatPrometheus             = "prometheus"
+	formatPrometheus statsFormat = "prometheus"
 )
 
 // Handler returns an HTTP handler that shows the metrics by text in the store.
@@ -44,7 +44,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.Store.Counters(),
 		h.Store.Histograms(),
 	)
-	w.Write(b)
+	w.Write(b) //nolint:errcheck
 }
 
 func newStatsFormater(format statsFormat) statsFormater {
