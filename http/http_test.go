@@ -47,7 +47,7 @@ func TestPrometheusHandler(t *testing.T) {
 	gauge1 := scope.Gauge("gauge1")
 	gauge1.Inc()
 
-	ts := httptest.NewServer(PrometheusHandler(store))
+	ts := httptest.NewServer(PrometheusHandler(store, "myapp"))
 	defer ts.Close()
 
 	res, err := http.Get(ts.URL)
@@ -60,8 +60,8 @@ func TestPrometheusHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := string(b)
-	assert.Contains(t, body, "# TYPE samaritan_prometheus_gauge1 gauge\n")
-	assert.Contains(t, body, "samaritan_prometheus_gauge1{} 1\n")
-	assert.Contains(t, body, "# TYPE samaritan_prometheus_counter1 counter\n")
-	assert.Contains(t, body, "samaritan_prometheus_counter1{} 1\n")
+	assert.Contains(t, body, "# TYPE myapp_prometheus_gauge1 gauge\n")
+	assert.Contains(t, body, "myapp_prometheus_gauge1{} 1\n")
+	assert.Contains(t, body, "# TYPE myapp_prometheus_counter1 counter\n")
+	assert.Contains(t, body, "myapp_prometheus_counter1{} 1\n")
 }

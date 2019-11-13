@@ -10,22 +10,31 @@ import (
 	"github.com/kirk91/stats"
 )
 
-var (
-	_ statsFormater = new(plainStatsFormatter)
-	_ statsFormater = new(prometheusStatsFormatter)
-)
+type formatterFactory interface {
+	Create() formatter
+}
 
-type statsFormater interface {
+type formatter interface {
 	Format([]*stats.Gauge, []*stats.Counter, []*stats.Histogram) []byte
 }
 
-type plainStatsFormatter struct{}
+type plainFormatterFactory struct{}
 
-func newPlainStatsFormatter() *plainStatsFormatter {
-	return new(plainStatsFormatter)
+func newPlainFormatterFactory() formatterFactory {
+	return new(plainFormatterFactory)
 }
 
-func (f *plainStatsFormatter) Format(gauges []*stats.Gauge, counters []*stats.Counter, histograms []*stats.Histogram) []byte {
+func (*plainFormatterFactory) Create() formatter {
+	return newPlainFormatter()
+}
+
+type plainFormatter struct{}
+
+func newPlainFormatter() *plainFormatter {
+	return new(plainFormatter)
+}
+
+func (f *plainFormatter) Format(gauges []*stats.Gauge, counters []*stats.Counter, histograms []*stats.Histogram) []byte {
 	metricNames := make([]string, 0)
 	metrics := make(map[string]interface{})
 	recordMetric := func(name string, value interface{}) {
@@ -51,19 +60,35 @@ func (f *plainStatsFormatter) Format(gauges []*stats.Gauge, counters []*stats.Co
 	return buf.Bytes()
 }
 
-type prometheusStatsFormatter struct {
+type prometheusFormatterFactory struct {
+	namespace string
+}
+
+func newPrometheusFormatterFactory(namespace string) formatterFactory {
+	return &prometheusFormatterFactory{
+		namespace: namespace,
+	}
+}
+
+func (f *prometheusFormatterFactory) Create() formatter {
+	return newPrometheusFormatter(f.namespace)
+}
+
+type prometheusFormatter struct {
+	namespace   string
 	metricTypes map[string]struct{}
 }
 
-func newPrometheusStatsFormatter() *prometheusStatsFormatter {
-	return &prometheusStatsFormatter{
+func newPrometheusFormatter(namespace string) *prometheusFormatter {
+	return &prometheusFormatter{
+		namespace:   namespace,
 		metricTypes: make(map[string]struct{}),
 	}
 }
 
 // Format formats the metrics to a text-based format which prometheus accpets.
 // Refer to https://prometheus.io/docs/instrumenting/exposition_formats/
-func (f *prometheusStatsFormatter) Format(gauges []*stats.Gauge, counters []*stats.Counter, histograms []*stats.Histogram) []byte {
+func (f *prometheusFormatter) Format(gauges []*stats.Gauge, counters []*stats.Counter, histograms []*stats.Histogram) []byte {
 	buf := new(bytes.Buffer)
 
 	for _, gauge := range gauges {
@@ -79,7 +104,7 @@ func (f *prometheusStatsFormatter) Format(gauges []*stats.Gauge, counters []*sta
 	return buf.Bytes()
 }
 
-func (f *prometheusStatsFormatter) formatCounter(buf *bytes.Buffer, c *stats.Counter) {
+func (f *prometheusFormatter) formatCounter(buf *bytes.Buffer, c *stats.Counter) {
 	name := f.formatMeticName(c.TagExtractedName())
 	value := c.Value()
 	tags := f.formatTags(c.Tags())
@@ -89,7 +114,7 @@ func (f *prometheusStatsFormatter) formatCounter(buf *bytes.Buffer, c *stats.Cou
 	buf.WriteString(fmt.Sprintf("%s{%s} %d\n", name, tags, value))
 }
 
-func (f *prometheusStatsFormatter) formatGauge(buf *bytes.Buffer, g *stats.Gauge) {
+func (f *prometheusFormatter) formatGauge(buf *bytes.Buffer, g *stats.Gauge) {
 	name := f.formatMeticName(g.TagExtractedName())
 	value := g.Value()
 	tags := f.formatTags(g.Tags())
@@ -99,7 +124,7 @@ func (f *prometheusStatsFormatter) formatGauge(buf *bytes.Buffer, g *stats.Gauge
 	buf.WriteString(fmt.Sprintf("%s{%s} %d\n", name, tags, value))
 }
 
-func (f *prometheusStatsFormatter) formatHistogram(buf *bytes.Buffer, h *stats.Histogram) {
+func (f *prometheusFormatter) formatHistogram(buf *bytes.Buffer, h *stats.Histogram) {
 	name := f.formatMeticName(h.TagExtractedName())
 	tags := f.formatTags(h.Tags())
 	if f.recordMetricType(name) {
@@ -109,7 +134,7 @@ func (f *prometheusStatsFormatter) formatHistogram(buf *bytes.Buffer, h *stats.H
 	f.formatHistogramValue(buf, name, tags, hStats)
 }
 
-func (f *prometheusStatsFormatter) formatHistogramValue(buf *bytes.Buffer, name, tags string, hStats *stats.HistogramStatistics) {
+func (f *prometheusFormatter) formatHistogramValue(buf *bytes.Buffer, name, tags string, hStats *stats.HistogramStatistics) {
 	sbs := hStats.SupportedBuckets()
 	cbs := hStats.ComputedBuckets()
 	for i := 0; i < len(sbs); i++ {
@@ -126,7 +151,7 @@ func (f *prometheusStatsFormatter) formatHistogramValue(buf *bytes.Buffer, name,
 	buf.WriteString(fmt.Sprintf("%s_count{%s} %d\n", name, tags, hStats.SampleCount()))
 }
 
-func (f *prometheusStatsFormatter) recordMetricType(metricName string) bool {
+func (f *prometheusFormatter) recordMetricType(metricName string) bool {
 	if _, ok := f.metricTypes[metricName]; ok {
 		return false
 	}
@@ -134,14 +159,14 @@ func (f *prometheusStatsFormatter) recordMetricType(metricName string) bool {
 	return true
 }
 
-func (f *prometheusStatsFormatter) formatMeticName(name string) string {
+func (f *prometheusFormatter) formatMeticName(name string) string {
 	// A metric name should have a (single-word) application prefix relevant to
 	// the domain the metric belongs to.
 	// Refer to https://prometheus.io/docs/practices/naming/#metric-names
-	return f.sanitizeName(fmt.Sprintf("samaritan_%s", name))
+	return f.sanitizeName(fmt.Sprintf("%s_%s", f.namespace, name))
 }
 
-func (f *prometheusStatsFormatter) formatTags(tags []*stats.Tag) string {
+func (f *prometheusFormatter) formatTags(tags []*stats.Tag) string {
 	res := make([]string, len(tags))
 	for i, tag := range tags {
 		res[i] = fmt.Sprintf("%s=\"%s\"", f.sanitizeName(tag.Name), tag.Value)
@@ -149,7 +174,7 @@ func (f *prometheusStatsFormatter) formatTags(tags []*stats.Tag) string {
 	return strings.Join(res, ",")
 }
 
-func (f *prometheusStatsFormatter) sanitizeName(name string) string {
+func (f *prometheusFormatter) sanitizeName(name string) string {
 	// The name must match the regex [a-zA-Z_][a-zA-Z0-9_]* as required by
 	// prometheus. Refer to https://prometheus.io/docs/concepts/data_model/
 	re := regexp.MustCompile("[^a-zA-Z0-9_]")
