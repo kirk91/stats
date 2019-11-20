@@ -140,14 +140,14 @@ func (f *prometheusFormatter) formatHistogramValue(buf *bytes.Buffer, name, tags
 	for i := 0; i < len(sbs); i++ {
 		b := sbs[i]
 		v := cbs[i]
-		bucketTags := fmt.Sprintf("%s,le=\"%.32g\"", tags, b)
+		bucketTags := fmt.Sprintf("%s,le=\"%.8g\"", tags, b)
 		// trim the comma prefix when tags is empty
 		bucketTags = strings.TrimPrefix(bucketTags, ",")
 		buf.WriteString(fmt.Sprintf("%s_bucket{%s} %d\n", name, bucketTags, v))
 	}
 	bucketTags := strings.TrimPrefix(fmt.Sprintf("%s,le=\"+Inf\"", tags), ",")
 	buf.WriteString(fmt.Sprintf("%s_bucket{%s} %d\n", name, bucketTags, hStats.SampleCount()))
-	buf.WriteString(fmt.Sprintf("%s_sum{%s} %.32g\n", name, tags, hStats.SampleSum()))
+	buf.WriteString(fmt.Sprintf("%s_sum{%s} %.8g\n", name, tags, hStats.SampleSum()))
 	buf.WriteString(fmt.Sprintf("%s_count{%s} %d\n", name, tags, hStats.SampleCount()))
 }
 
