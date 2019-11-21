@@ -13,6 +13,7 @@ import (
 const (
 	headerContentEncoding = "Content-Encoding"
 	headerAccpetEncoding  = "Accept-Encoding"
+	headerContentType     = "Content-Type"
 )
 
 // Handler returns an HTTP handler that shows the metrics by text in the store.
@@ -68,10 +69,12 @@ func (h *handler) write(rw http.ResponseWriter, req *http.Request, b []byte) {
 		gw.Reset(w)
 		defer gw.Close()
 		w = gw
-		// set content-encoding header
+		// set content-encoding
 		rw.Header().Set(headerContentEncoding, "gzip")
 	}
 
+	// set content-type
+	rw.Header().Set(headerContentType, "text/plain")
 	w.Write(b) //nolint:errcheck
 }
 

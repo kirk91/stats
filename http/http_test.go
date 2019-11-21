@@ -101,6 +101,7 @@ func TestHandlerWrite(t *testing.T) {
 
 		h := &handler{}
 		h.write(rw, req, b)
+		assert.Equal(t, "text/plain", rw.Header().Get("content-type"))
 		assert.Equal(t, b, rw.Body.Bytes())
 	})
 
@@ -114,6 +115,7 @@ func TestHandlerWrite(t *testing.T) {
 
 		h := &handler{}
 		h.write(rw, req, b)
+		assert.Equal(t, "text/plain", rw.Header().Get("content-type"))
 
 		// decode response
 		gz, err := gzip.NewReader(rw.Body)
