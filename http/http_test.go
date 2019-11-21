@@ -1,6 +1,7 @@
 package http
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -64,4 +65,61 @@ func TestPrometheusHandler(t *testing.T) {
 	assert.Contains(t, body, "myapp_prometheus_gauge1{} 1\n")
 	assert.Contains(t, body, "# TYPE myapp_prometheus_counter1 counter\n")
 	assert.Contains(t, body, "myapp_prometheus_counter1{} 1\n")
+}
+
+func TestGzipAccpeted(t *testing.T) {
+	tests := []struct {
+		acceptEncoding string
+		expected       bool
+	}{
+		{"", false},
+		{"*", false},
+		{"identity", false},
+		{"gzip", true},
+		{"deflate, gzip;q=1.0, *;q=0.5", true},
+	}
+
+	for i, test := range tests {
+		name := fmt.Sprintf("case %d", i+1)
+		t.Run(name, func(t *testing.T) {
+			header := http.Header{}
+			header.Set("Accept-Encoding", test.acceptEncoding)
+			assert.Equal(
+				t,
+				test.expected,
+				gzipAccepted(header),
+			)
+		})
+	}
+}
+
+func TestHandlerWrite(t *testing.T) {
+	t.Run("identity", func(t *testing.T) {
+		rw := httptest.NewRecorder()
+		req := &http.Request{}
+		b := []byte("hello, world")
+
+		h := &handler{}
+		h.write(rw, req, b)
+		assert.Equal(t, b, rw.Body.Bytes())
+	})
+
+	t.Run("gzip", func(t *testing.T) {
+		rw := httptest.NewRecorder()
+		req := &http.Request{
+			Header: http.Header{},
+		}
+		req.Header.Set("Accept-Encoding", "gzip")
+		b := []byte("hello, world")
+
+		h := &handler{}
+		h.write(rw, req, b)
+
+		// decode response
+		gz, err := gzip.NewReader(rw.Body)
+		assert.NoError(t, err)
+		actual, err := ioutil.ReadAll(gz)
+		assert.NoError(t, err)
+		assert.Equal(t, b, actual)
+	})
 }
