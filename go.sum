@@ -4,6 +4,8 @@ github.com/kirk91/statsd v0.0.0-20190123111500-eca5e2a6416c h1:xiy939HvpMPG4J5Qg
 github.com/kirk91/statsd v0.0.0-20190123111500-eca5e2a6416c/go.mod h1:8n7YPJ8bZPkDa2ffJkmGFJxZGr/qHFeVuXhuCkj6E6M=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pkg/errors v0.9.0 h1:J8lpUdobwIeCI7OiSxHqEwJUKvJwicL5+3v1oe2Yb4k=
+github.com/pkg/errors v0.9.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/samaritan-proxy/circonusllhist v0.1.4-0.20190909095717-47c325f1002f h1:ESKmjMOTEhvqbzcPuJvdbtdMKy4CdQ2Hfd05PQ4ytjU=
